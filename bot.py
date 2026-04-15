@@ -190,23 +190,26 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     titles = get_list_sheet_titles()
 
     if not titles:
-        await update.message.reply_text("Доступних списків не знайдено.")
+        await update.message.reply_text(
+            "Доступних списків не знайдено.",
+            reply_markup=ReplyKeyboardRemove()
+        )
         return
 
     keyboard = []
     for title in titles:
-        keyboard.append([title])
+        keyboard.append([InlineKeyboardButton(title, callback_data=f"sheet:{title}")])
 
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
+    await update.message.reply_text(
+        "Номер отримано.",
+        reply_markup=ReplyKeyboardRemove()
     )
 
     await update.message.reply_text(
         "Обери список:",
-        reply_markup=reply_markup
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
+    
 async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         worksheet = get_worksheet()
@@ -222,15 +225,6 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
     titles = get_list_sheet_titles()
-
-    if text in titles:
-        context.user_data["selected_sheet"] = text
-
-        await update.message.reply_text(
-            f"Список обрано: {text}\nВведи номер ТТ у форматі 006, 054, 123:",
-            reply_markup=ReplyKeyboardRemove()
-        )
-        return
 
     if context.user_data.get("selected_sheet"):
         if text.isdigit() and len(text) == 3:
@@ -274,6 +268,15 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
     await query.answer()
+
+        if data.startswith("sheet:"):
+        sheet_title = data.split(":", 1)[1]
+        context.user_data["selected_sheet"] = sheet_title
+
+        await query.edit_message_text(
+            f"Список обрано: {sheet_title}\nВведи номер ТТ у форматі 006, 054, 123:"
+        )
+        return
 
     if data == "noop":
         return
