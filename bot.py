@@ -154,6 +154,25 @@ def build_calendar(year: int = None, month: int = None):
         buttons.append(row)
 
     return InlineKeyboardMarkup(buttons)
+
+def save_product_result(sheet_title, row_number, term1, qty1, term2="", qty2=""):
+    creds_dict = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(credentials)
+
+    spreadsheet = client.open_by_key(SHEET_ID)
+    worksheet = spreadsheet.worksheet(sheet_title)
+
+    worksheet.update(
+        f"D{row_number}:G{row_number}",
+        [[term1, qty1, term2, qty2]]
+    )
     
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
