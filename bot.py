@@ -272,7 +272,48 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    data = query.data
     await query.answer()
+
+    if data == "noop":
+        return
+
+    if data.startswith("calnav:"):
+        _, y, m, direction = data.split(":")
+        y = int(y)
+        m = int(m)
+
+        if direction == "prev":
+            m -= 1
+            if m == 0:
+                m = 12
+                y -= 1
+        else:
+            m += 1
+            if m == 13:
+                m = 1
+                y += 1
+
+        keyboard = build_calendar(y, m).inline_keyboard
+        keyboard.append([InlineKeyboardButton("Товар відсутній", callback_data="no_product")])
+
+        await query.edit_message_reply_markup(
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return
+
+    if data.startswith("calpick:"):
+        selected_date = data.split(":", 1)[1]   # YYYY-MM-DD
+        yyyy, mm, dd = selected_date.split("-")
+        formatted_date = f"{dd}.{mm}.{yyyy}"
+
+        context.user_data["term1_date"] = formatted_date
+        context.user_data["awaiting"] = "term1_qty"
+
+        await query.edit_message_text(
+            f"{query.message.text}\nОбрано: {formatted_date}\n\nВведи кількість:"
+        )
+        return
     
 def main():
     if not BOT_TOKEN:
