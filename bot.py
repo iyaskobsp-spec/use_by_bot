@@ -170,8 +170,8 @@ def save_product_result(sheet_title, row_number, term1, qty1, term2="", qty2="")
     worksheet = spreadsheet.worksheet(sheet_title)
 
     worksheet.update(
-        f"D{row_number}:G{row_number}",
-        [[term1, qty1, term2, qty2]]
+        range_name=f"D{row_number}:G{row_number}",
+        values=[[term1, qty1, term2, qty2]]
     )
     
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
