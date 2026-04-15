@@ -1,5 +1,9 @@
 import os
+import json
 from dotenv import load_dotenv
+
+import gspread
+from google.oauth2.service_account import Credentials
 
 from telegram import ReplyKeyboardMarkup, KeyboardButton, Update
 from telegram.ext import (
@@ -11,7 +15,32 @@ from telegram.ext import (
 )
 
 load_dotenv()
+
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+SHEET_ID = os.getenv("SHEET_ID")
+
+
+def get_worksheet():
+    if not GOOGLE_SERVICE_ACCOUNT_JSON:
+        raise ValueError("Не знайдено GOOGLE_SERVICE_ACCOUNT_JSON")
+    if not SHEET_ID:
+        raise ValueError("Не знайдено SHEET_ID")
+
+    creds_dict = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(credentials)
+
+    spreadsheet = client.open_by_key(SHEET_ID)
+    worksheet = spreadsheet.get_worksheet(0)  # перша вкладка
+
+    return worksheet
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -45,10 +74,23 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        worksheet = get_worksheet()
+        sheet_title = worksheet.title
+        rows_count = len(worksheet.get_all_values())
+
+        await update.message.reply_text(
+            f"Google Sheets підключено.\n"
+            f"Вкладка: {sheet_title}\n"
+            f"Рядків: {rows_count}"
+        )
+    except Exception as e:
+        await update.message.reply_text(f"Помилка підключення до таблиці:\n{e}")
+
+
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Напиши /start"
-    )
+    await update.message.reply_text("Напиши /start")
 
 
 def main():
@@ -58,6 +100,7 @@ def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("testsheet", test_sheet))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
