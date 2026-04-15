@@ -269,7 +269,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     await query.answer()
 
-        if data.startswith("sheet:"):
+    if data.startswith("sheet:"):
         sheet_title = data.split(":", 1)[1]
         context.user_data["selected_sheet"] = sheet_title
 
