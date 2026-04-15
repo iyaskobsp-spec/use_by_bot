@@ -298,7 +298,14 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data["term2_qty"]
         )
 
+        context.user_data["current_product_index"] += 1
+        context.user_data["term1_date"] = ""
+        context.user_data["term1_qty"] = ""
+        context.user_data["term2_date"] = ""
+        context.user_data["term2_qty"] = ""
+
         await update.message.reply_text("Дані записано в таблицю.")
+        await show_current_product(update.message, context)
         return
 
     if context.user_data.get("selected_sheet"):
@@ -380,7 +387,14 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data["term1_qty"]
         )
 
+        context.user_data["current_product_index"] += 1
+        context.user_data["term1_date"] = ""
+        context.user_data["term1_qty"] = ""
+        context.user_data["term2_date"] = ""
+        context.user_data["term2_qty"] = ""
+
         await query.edit_message_text("Дані записано в таблицю.")
+        await show_current_product(query.message, context)
         return
 
     if data.startswith("calnav:"):
