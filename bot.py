@@ -17,6 +17,7 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
     ContextTypes,
     filters,
 )
@@ -251,15 +252,28 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             first_product = products[0]
 
+            context.user_data["awaiting"] = "term1_date"
+
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("Товар відсутній", callback_data="no_product")]
+            ])
+
             await update.message.reply_text(
                 f"Товар: {first_product['product_name']}\n"
                 f"Залишок обліковий: {first_product['stock']}\n\n"
-                f"Введи термін 1:"
+                f"Найближчий термін закінчення придатності:",
+                reply_markup=InlineKeyboardMarkup(
+                    build_calendar().inline_keyboard + keyboard.inline_keyboard
+                )
             )
             return
 
     await update.message.reply_text("Напиши /start")
 
+async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
 def main():
     if not BOT_TOKEN:
         raise ValueError("Не знайдено BOT_TOKEN")
@@ -272,6 +286,7 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("testsheet", test_sheet))
+    app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
