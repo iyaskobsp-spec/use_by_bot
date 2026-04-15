@@ -92,14 +92,28 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     context.user_data["phone"] = contact.phone_number
-
     logging.info(f"Телефон отримано: {contact.phone_number}")
 
-    await update.message.reply_text(
-        "Номер отримано.",
-        reply_markup=ReplyKeyboardRemove()
+    titles = get_list_sheet_titles()
+
+    if not titles:
+        await update.message.reply_text("Доступних списків не знайдено.")
+        return
+
+    keyboard = []
+    for title in titles:
+        keyboard.append([title])
+
+    reply_markup = ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
     )
 
+    await update.message.reply_text(
+        "Обери список:",
+        reply_markup=reply_markup
+    )
 async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         worksheet = get_worksheet()
