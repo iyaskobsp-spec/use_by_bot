@@ -326,6 +326,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data["products"] = products
             context.user_data["current_product_index"] = 0
 
+            await update.message.reply_text(
+                f"Для ТТ {text} знайдено товарів: {len(products)}"
+            )
+
             first_product = products[0]
             context.user_data["awaiting"] = "term1_date"
 
