@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.INFO)
 import gspread
 from google.oauth2.service_account import Credentials
 
-from telegram import ReplyKeyboardMarkup, KeyboardButton, Update
+from telegram import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -72,7 +72,8 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info(f"Телефон отримано: {contact.phone_number}")
 
     await update.message.reply_text(
-        f"Номер отримано: {contact.phone_number}"
+        "Номер отримано.",
+        reply_markup=ReplyKeyboardRemove()
     )
 
 async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
