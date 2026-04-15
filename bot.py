@@ -243,22 +243,20 @@ async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
-        if context.user_data.get("awaiting") == "term1_qty":
-            context.user_data["term1_qty"] = text
-            context.user_data["awaiting"] = "term2_question"
+    if context.user_data.get("awaiting") == "term1_qty":
+        context.user_data["term1_qty"] = text
+        context.user_data["awaiting"] = "term2_question"
 
-            keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("Так", callback_data="term2_yes")],
-                [InlineKeyboardButton("Ні", callback_data="term2_no")]
-            ])
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("Так", callback_data="term2_yes")],
+            [InlineKeyboardButton("Ні", callback_data="term2_no")]
+        ])
 
-            await update.message.reply_text(
-                "Додати другий термін придатності?",
-                reply_markup=keyboard
-            )
-            return
-
-    titles = get_list_sheet_titles()
+        await update.message.reply_text(
+            "Додати другий термін придатності?",
+            reply_markup=keyboard
+        )
+        return
 
     if context.user_data.get("selected_sheet"):
         if text.isdigit() and len(text) == 3:
@@ -279,7 +277,6 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data["current_product_index"] = 0
 
             first_product = products[0]
-
             context.user_data["awaiting"] = "term1_date"
 
             keyboard = InlineKeyboardMarkup([
@@ -295,6 +292,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             )
             return
+
+        await update.message.reply_text(
+            "Невірний формат. Введи номер ТТ рівно з 3 цифр: 006, 054, 123."
+        )
+        return
 
     await update.message.reply_text("Напиши /start")
 
