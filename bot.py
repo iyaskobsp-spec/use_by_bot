@@ -244,18 +244,19 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
         if context.user_data.get("awaiting") == "term1_qty":
-        current_index = context.user_data["current_product_index"]
-        current_product = context.user_data["products"][current_index]
+            context.user_data["term1_qty"] = text
+            context.user_data["awaiting"] = "term2_question"
 
-        save_product_result(
-            context.user_data["selected_sheet"],
-            current_product["row_number"],
-            context.user_data["term1_date"],
-            text
-        )
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("Так", callback_data="term2_yes")],
+                [InlineKeyboardButton("Ні", callback_data="term2_no")]
+            ])
 
-        await update.message.reply_text("Дані записано в таблицю.")
-        return
+            await update.message.reply_text(
+                "Додати другий термін придатності?",
+                reply_markup=keyboard
+            )
+            return
 
     titles = get_list_sheet_titles()
 
