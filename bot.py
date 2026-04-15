@@ -177,10 +177,14 @@ def save_product_result(sheet_title, row_number, term1, qty1, term2="", qty2="")
 async def show_current_product(target, context):
     current_index = context.user_data["current_product_index"]
     products = context.user_data["products"]
+    chat_id = target.chat_id
 
     if current_index >= len(products):
         context.user_data["awaiting"] = None
-        await target.reply_text("Список завершено.")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="Список завершено."
+        )
         return
 
     product = products[current_index]
@@ -192,10 +196,13 @@ async def show_current_product(target, context):
         ]
     )
 
-    await target.reply_text(
-        f"Товар: {product['product_name']}\n"
-        f"Залишок обліковий: {product['stock']}\n\n"
-        f"Найближчий термін закінчення придатності:",
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=(
+            f"Товар: {product['product_name']}\n"
+            f"Залишок обліковий: {product['stock']}\n\n"
+            f"Найближчий термін закінчення придатності:"
+        ),
         reply_markup=keyboard
     )
     
