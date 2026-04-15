@@ -258,6 +258,24 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    if context.user_data.get("awaiting") == "term2_qty":
+        context.user_data["term2_qty"] = text
+
+        current_index = context.user_data["current_product_index"]
+        current_product = context.user_data["products"][current_index]
+
+        save_product_result(
+            context.user_data["selected_sheet"],
+            current_product["row_number"],
+            context.user_data["term1_date"],
+            context.user_data["term1_qty"],
+            context.user_data["term2_date"],
+            context.user_data["term2_qty"]
+        )
+
+        await update.message.reply_text("Дані записано в таблицю.")
+        return
+
     if context.user_data.get("selected_sheet"):
         if text.isdigit() and len(text) == 3:
             context.user_data["tt_number"] = text
@@ -317,6 +335,29 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "noop":
         return
 
+    if data == "term2_yes":
+        context.user_data["awaiting"] = "term2_date"
+
+        await query.edit_message_text(
+            "Другий термін придатності:",
+            reply_markup=build_calendar()
+        )
+        return
+
+    if data == "term2_no":
+        current_index = context.user_data["current_product_index"]
+        current_product = context.user_data["products"][current_index]
+
+        save_product_result(
+            context.user_data["selected_sheet"],
+            current_product["row_number"],
+            context.user_data["term1_date"],
+            context.user_data["term1_qty"]
+        )
+
+        await query.edit_message_text("Дані записано в таблицю.")
+        return
+
     if data.startswith("calnav:"):
         _, y, m, direction = data.split(":")
         y = int(y)
@@ -333,26 +374,33 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 m = 1
                 y += 1
 
-        keyboard = build_calendar(y, m).inline_keyboard
-        keyboard.append([InlineKeyboardButton("Товар відсутній", callback_data="no_product")])
-
         await query.edit_message_reply_markup(
-            reply_markup=InlineKeyboardMarkup(keyboard)
+            reply_markup=build_calendar(y, m)
         )
         return
 
     if data.startswith("calpick:"):
-        selected_date = data.split(":", 1)[1]   # YYYY-MM-DD
+        selected_date = data.split(":", 1)[1]
         yyyy, mm, dd = selected_date.split("-")
         formatted_date = f"{dd}.{mm}.{yyyy}"
 
-        context.user_data["term1_date"] = formatted_date
-        context.user_data["awaiting"] = "term1_qty"
+        if context.user_data.get("awaiting") == "term1_date":
+            context.user_data["term1_date"] = formatted_date
+            context.user_data["awaiting"] = "term1_qty"
 
-        await query.edit_message_text(
-            f"{query.message.text}\nОбрано: {formatted_date}\n\nВведи кількість:"
-        )
-        return
+            await query.edit_message_text(
+                f"{query.message.text}\nОбрано: {formatted_date}\n\nВведи кількість:"
+            )
+            return
+
+        if context.user_data.get("awaiting") == "term2_date":
+            context.user_data["term2_date"] = formatted_date
+            context.user_data["awaiting"] = "term2_qty"
+
+            await query.edit_message_text(
+                f"Другий термін придатності: {formatted_date}\n\nВведи кількість:"
+            )
+            return
     
 def main():
     if not BOT_TOKEN:
