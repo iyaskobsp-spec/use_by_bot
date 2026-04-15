@@ -173,6 +173,31 @@ def save_product_result(sheet_title, row_number, term1, qty1, term2="", qty2="")
         range_name=f"D{row_number}:G{row_number}",
         values=[[term1, qty1, term2, qty2]]
     )
+
+async def show_current_product(target, context):
+    current_index = context.user_data["current_product_index"]
+    products = context.user_data["products"]
+
+    if current_index >= len(products):
+        context.user_data["awaiting"] = None
+        await target.reply_text("Список завершено.")
+        return
+
+    product = products[current_index]
+    context.user_data["awaiting"] = "term1_date"
+
+    keyboard = InlineKeyboardMarkup(
+        build_calendar().inline_keyboard + [
+            [InlineKeyboardButton("Товар відсутній", callback_data="no_product")]
+        ]
+    )
+
+    await target.reply_text(
+        f"Товар: {product['product_name']}\n"
+        f"Залишок обліковий: {product['stock']}\n\n"
+        f"Найближчий термін закінчення придатності:",
+        reply_markup=keyboard
+    )
     
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
