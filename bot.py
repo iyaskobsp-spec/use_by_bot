@@ -61,6 +61,38 @@ def get_list_sheet_titles():
             titles.append(ws.title)
 
     return titles
+
+def get_products_by_tt(sheet_title, tt_number):
+    creds_dict = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(credentials)
+
+    spreadsheet = client.open_by_key(SHEET_ID)
+    worksheet = spreadsheet.worksheet(sheet_title)
+
+    rows = worksheet.get_all_values()
+
+    products = []
+
+    for i, row in enumerate(rows[1:], start=2):  # пропускаємо заголовок
+        product_name = row[0].strip() if len(row) > 0 else ""
+        tt = row[1].strip() if len(row) > 1 else ""
+        stock = row[2].strip() if len(row) > 2 else ""
+
+        if tt == tt_number:
+            products.append({
+                "row_number": i,
+                "product_name": product_name,
+                "stock": stock,
+            })
+
+    return products
     
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
