@@ -134,8 +134,22 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["selected_sheet"] = text
 
         await update.message.reply_text(
-            f"Список обрано: {text}\nВведи № ТТ:",
+            f"Список обрано: {text}\nВведи номер ТТ у форматі 006, 054, 123:",
             reply_markup=ReplyKeyboardRemove()
+        )
+        return
+
+    if context.user_data.get("selected_sheet"):
+        if text.isdigit() and len(text) == 3:
+            context.user_data["tt_number"] = text
+
+            await update.message.reply_text(
+                f"ТТ прийнято: {text}"
+            )
+            return
+
+        await update.message.reply_text(
+            "Невірний формат. Введи номер ТТ рівно з 3 цифр: 006, 054, 123."
         )
         return
 
