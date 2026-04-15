@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 import gspread
 from google.oauth2.service_account import Credentials
 
-from telegram import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, Update
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -126,6 +126,19 @@ async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Помилка:\n{e}")
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
+
+    titles = get_list_sheet_titles()
+
+    if text in titles:
+        context.user_data["selected_sheet"] = text
+
+        await update.message.reply_text(
+            f"Список обрано: {text}\nВведи № ТТ:",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return
+
     await update.message.reply_text("Напиши /start")
 
 def main():
