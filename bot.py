@@ -22,11 +22,6 @@ SHEET_ID = os.getenv("SHEET_ID")
 
 
 def get_worksheet():
-    if not GOOGLE_SERVICE_ACCOUNT_JSON:
-        raise ValueError("Не знайдено GOOGLE_SERVICE_ACCOUNT_JSON")
-    if not SHEET_ID:
-        raise ValueError("Не знайдено SHEET_ID")
-
     creds_dict = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
 
     scopes = [
@@ -38,7 +33,7 @@ def get_worksheet():
     client = gspread.authorize(credentials)
 
     spreadsheet = client.open_by_key(SHEET_ID)
-    worksheet = spreadsheet.get_worksheet(0)  # перша вкладка
+    worksheet = spreadsheet.get_worksheet(0)
 
     return worksheet
 
@@ -68,25 +63,19 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["phone"] = contact.phone_number
 
-    await update.message.reply_text(
-        f"Номер отримано: {contact.phone_number}\n"
-        f"Далі тут буде вибір списку."
-    )
+    await update.message.reply_text("Номер отримано.")
 
 
 async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         worksheet = get_worksheet()
-        sheet_title = worksheet.title
-        rows_count = len(worksheet.get_all_values())
-
         await update.message.reply_text(
-            f"Google Sheets підключено.\n"
-            f"Вкладка: {sheet_title}\n"
-            f"Рядків: {rows_count}"
+            f"Таблиця підключена.\n"
+            f"Вкладка: {worksheet.title}\n"
+            f"Рядків: {len(worksheet.get_all_values())}"
         )
     except Exception as e:
-        await update.message.reply_text(f"Помилка підключення до таблиці:\n{e}")
+        await update.message.reply_text(f"Помилка:\n{e}")
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -95,7 +84,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     if not BOT_TOKEN:
-        raise ValueError("Не знайдено BOT_TOKEN в .env")
+        raise ValueError("Не знайдено BOT_TOKEN")
+    if not GOOGLE_SERVICE_ACCOUNT_JSON:
+        raise ValueError("Не знайдено GOOGLE_SERVICE_ACCOUNT_JSON")
+    if not SHEET_ID:
+        raise ValueError("Не знайдено SHEET_ID")
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
