@@ -3,12 +3,16 @@ import os
 import json
 import re
 from dotenv import load_dotenv
+from datetime import date
 logging.basicConfig(level=logging.INFO)
 
 import gspread
 from google.oauth2.service_account import Credentials
 
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, Update
+from telegram import (
+    ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton,
+    InlineKeyboardButton, InlineKeyboardMarkup, Update
+)
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -93,6 +97,62 @@ def get_products_by_tt(sheet_title, tt_number):
             })
 
     return products
+
+def _month_days(year: int, month: int):
+    import calendar
+    first_weekday, days_count = calendar.monthrange(year, month)
+    return first_weekday, days_count
+
+
+def build_calendar(year: int = None, month: int = None):
+    today = date.today()
+    if year is None:
+        year = today.year
+    if month is None:
+        month = today.month
+
+    first_wd, days = _month_days(year, month)
+
+    row1 = [
+        InlineKeyboardButton("«", callback_data=f"calnav:{year}:{month}:prev"),
+        InlineKeyboardButton(f"{month:02d}.{year}", callback_data="noop"),
+        InlineKeyboardButton("»", callback_data=f"calnav:{year}:{month}:next"),
+    ]
+
+    row2 = [
+        InlineKeyboardButton("Пн", callback_data="noop"),
+        InlineKeyboardButton("Вт", callback_data="noop"),
+        InlineKeyboardButton("Ср", callback_data="noop"),
+        InlineKeyboardButton("Чт", callback_data="noop"),
+        InlineKeyboardButton("Пт", callback_data="noop"),
+        InlineKeyboardButton("Сб", callback_data="noop"),
+        InlineKeyboardButton("Нд", callback_data="noop"),
+    ]
+
+    buttons = [row1, row2]
+    row = []
+
+    pad = first_wd
+    for _ in range(pad):
+        row.append(InlineKeyboardButton(" ", callback_data="noop"))
+
+    for d in range(1, days + 1):
+        row.append(
+            InlineKeyboardButton(
+                str(d),
+                callback_data=f"calpick:{year}-{month:02d}-{d:02d}"
+            )
+        )
+        if len(row) == 7:
+            buttons.append(row)
+            row = []
+
+    if row:
+        while len(row) < 7:
+            row.append(InlineKeyboardButton(" ", callback_data="noop"))
+        buttons.append(row)
+
+    return InlineKeyboardMarkup(buttons)
     
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
