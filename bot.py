@@ -1,6 +1,7 @@
 import logging
 import os
 import json
+import re
 from dotenv import load_dotenv
 logging.basicConfig(level=logging.INFO)
 
@@ -38,6 +39,29 @@ def get_worksheet():
 
     return worksheet
 
+def get_list_sheet_titles():
+    creds_dict = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(credentials)
+
+    spreadsheet = client.open_by_key(SHEET_ID)
+    worksheets = spreadsheet.worksheets()
+
+    pattern = re.compile(r"^\d{2}\.\d{2}\.\d{4}_\d+$")
+
+    titles = []
+    for ws in worksheets:
+        if pattern.match(ws.title):
+            titles.append(ws.title)
+
+    return titles
+    
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [KeyboardButton("Поділитися номером", request_contact=True)]
