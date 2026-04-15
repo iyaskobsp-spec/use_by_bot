@@ -175,15 +175,28 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if text.isdigit() and len(text) == 3:
             context.user_data["tt_number"] = text
 
+            products = get_products_by_tt(
+                context.user_data["selected_sheet"],
+                text
+            )
+
+            if not products:
+                await update.message.reply_text(
+                    f"Для ТТ {text} товари не знайдено."
+                )
+                return
+
+            context.user_data["products"] = products
+            context.user_data["current_product_index"] = 0
+
+            first_product = products[0]
+
             await update.message.reply_text(
-                f"ТТ прийнято: {text}"
+                f"Товар: {first_product['product_name']}\n"
+                f"Залишок обліковий: {first_product['stock']}\n\n"
+                f"Введи термін 1:"
             )
             return
-
-        await update.message.reply_text(
-            "Невірний формат. Введи номер ТТ рівно з 3 цифр: 006, 054, 123."
-        )
-        return
 
     await update.message.reply_text("Напиши /start")
 
