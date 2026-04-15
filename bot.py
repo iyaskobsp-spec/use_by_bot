@@ -1,6 +1,8 @@
+import logging
 import os
 import json
 from dotenv import load_dotenv
+logging.basicConfig(level=logging.INFO)
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -20,7 +22,6 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
 SHEET_ID = os.getenv("SHEET_ID")
 
-
 def get_worksheet():
     creds_dict = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
 
@@ -37,7 +38,6 @@ def get_worksheet():
 
     return worksheet
 
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [KeyboardButton("Поділитися номером", request_contact=True)]
@@ -53,18 +53,27 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.info(f"CONTACT UPDATE: {update}")
+
+    if not update.message:
+        logging.info("Нема update.message")
+        return
+
     contact = update.message.contact
 
     if not contact:
-        await update.message.reply_text("Надішли номер кнопкою нижче.")
+        logging.info("Контакт не прийшов")
+        await update.message.reply_text("Контакт не отримано. Натисни кнопку ще раз.")
         return
 
     context.user_data["phone"] = contact.phone_number
 
-    await update.message.reply_text("Номер отримано.")
+    logging.info(f"Телефон отримано: {contact.phone_number}")
 
+    await update.message.reply_text(
+        f"Номер отримано: {contact.phone_number}"
+    )
 
 async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -77,10 +86,8 @@ async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"Помилка:\n{e}")
 
-
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Напиши /start")
-
 
 def main():
     if not BOT_TOKEN:
@@ -99,7 +106,6 @@ def main():
 
     print("Бот запущений...")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
