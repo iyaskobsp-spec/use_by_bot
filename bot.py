@@ -243,6 +243,20 @@ async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
+        if context.user_data.get("awaiting") == "term1_qty":
+        current_index = context.user_data["current_product_index"]
+        current_product = context.user_data["products"][current_index]
+
+        save_product_result(
+            context.user_data["selected_sheet"],
+            current_product["row_number"],
+            context.user_data["term1_date"],
+            text
+        )
+
+        await update.message.reply_text("Дані записано в таблицю.")
+        return
+
     titles = get_list_sheet_titles()
 
     if context.user_data.get("selected_sheet"):
