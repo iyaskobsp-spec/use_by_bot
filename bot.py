@@ -489,16 +489,23 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         y = int(y)
         m = int(m)
 
-        if direction == "prev":
+        if direction == "prev_month":
             m -= 1
             if m == 0:
                 m = 12
                 y -= 1
-        else:
+
+        elif direction == "next_month":
             m += 1
             if m == 13:
                 m = 1
                 y += 1
+
+        elif direction == "prev_year":
+            y -= 1
+
+        elif direction == "next_year":
+            y += 1
 
         await query.edit_message_reply_markup(
             reply_markup=build_calendar(y, m)
