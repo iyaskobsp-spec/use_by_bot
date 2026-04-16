@@ -222,7 +222,13 @@ async def show_current_product(chat_id, context):
         ),
         reply_markup=keyboard
     )
-    
+
+def stable_menu_keyboard():
+    return ReplyKeyboardMarkup(
+        [["🏠 Меню"]],
+        resize_keyboard=True
+    )
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [KeyboardButton("Поділитися номером", request_contact=True)]
