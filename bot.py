@@ -241,21 +241,9 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Контакт не отримано. Натисни кнопку ще раз.")
         return
 
+    context.user_data.clear()
     context.user_data["phone"] = contact.phone_number
     logging.info(f"Телефон отримано: {contact.phone_number}")
-
-    titles = get_list_sheet_titles()
-
-    if not titles:
-        await update.message.reply_text(
-            "Доступних списків не знайдено.",
-            reply_markup=ReplyKeyboardRemove()
-        )
-        return
-
-    keyboard = []
-    for title in titles:
-        keyboard.append([InlineKeyboardButton(title, callback_data=f"sheet:{title}")])
 
     await update.message.reply_text(
         "Номер отримано.",
@@ -263,8 +251,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await update.message.reply_text(
-        "Обери список:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        "Введи номер ТТ у форматі 006, 054, 123:"
     )
     
 async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -321,6 +308,31 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_current_product(update.effective_chat.id, context)
         return
 
+    if context.user_data.get("phone") and not context.user_data.get("selected_sheet"):
+        if text.isdigit() and len(text) == 3:
+            context.user_data["tt_number"] = text
+
+            titles = get_list_sheet_titles()
+
+            if not titles:
+                await update.message.reply_text("Доступних списків не знайдено.")
+                return
+
+            keyboard = []
+            for title in titles:
+                keyboard.append([InlineKeyboardButton(title, callback_data=f"sheet:{title}")])
+
+            await update.message.reply_text(
+                f"ТТ прийнято: {text}\nОбери список:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return
+
+        await update.message.reply_text(
+            "Невірний формат. Введи номер ТТ рівно з 3 цифр: 006, 054, 123."
+        )
+        return
+    
     if context.user_data.get("selected_sheet"):
         if text.isdigit() and len(text) == 3:
             context.user_data["tt_number"] = text
