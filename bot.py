@@ -174,10 +174,9 @@ def save_product_result(sheet_title, row_number, term1, qty1, term2="", qty2="")
         values=[[term1, qty1, term2, qty2]]
     )
 
-async def show_current_product(target, context):
+async def show_current_product(chat_id, context):
     current_index = context.user_data["current_product_index"]
     products = context.user_data["products"]
-    chat_id = target.chat_id
 
     if current_index >= len(products):
         context.user_data["awaiting"] = None
@@ -312,7 +311,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["term2_qty"] = ""
 
         await update.message.reply_text("Дані записано в таблицю.")
-        await show_current_product(update.message, context)
+        await show_current_product(update.effective_chat.id, context)
         return
 
     if context.user_data.get("selected_sheet"):
@@ -405,7 +404,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["term2_qty"] = ""
 
         await query.edit_message_text("Дані записано в таблицю.")
-        await show_current_product(query.message, context)
+        await show_current_product(query.message.chat.id, context)
         return
 
     if data.startswith("calnav:"):
