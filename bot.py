@@ -133,9 +133,11 @@ def build_calendar(year: int = None, month: int = None):
     first_wd, days = _month_days(year, month)
 
     row1 = [
-        InlineKeyboardButton("«", callback_data=f"calnav:{year}:{month}:prev"),
+        InlineKeyboardButton("««", callback_data=f"calnav:{year}:{month}:prev_year"),
+        InlineKeyboardButton("«", callback_data=f"calnav:{year}:{month}:prev_month"),
         InlineKeyboardButton(f"{month:02d}.{year}", callback_data="noop"),
-        InlineKeyboardButton("»", callback_data=f"calnav:{year}:{month}:next"),
+        InlineKeyboardButton("»", callback_data=f"calnav:{year}:{month}:next_month"),
+        InlineKeyboardButton("»»", callback_data=f"calnav:{year}:{month}:next_year"),
     ]
 
     row2 = [
