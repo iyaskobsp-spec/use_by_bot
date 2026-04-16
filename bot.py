@@ -106,6 +106,17 @@ def get_products_by_tt(sheet_title, tt_number):
 
     return products
 
+def get_available_sheet_titles_for_tt(tt_number):
+    titles = get_list_sheet_titles()
+    available = []
+
+    for title in titles:
+        products = get_products_by_tt(title, tt_number)
+        if products:
+            available.append(title)
+
+    return available
+
 def _month_days(year: int, month: int):
     import calendar
     first_weekday, days_count = calendar.monthrange(year, month)
@@ -312,10 +323,12 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if text.isdigit() and len(text) == 3:
             context.user_data["tt_number"] = text
 
-            titles = get_list_sheet_titles()
+            titles = get_available_sheet_titles_for_tt(text)
 
             if not titles:
-                await update.message.reply_text("Доступних списків не знайдено.")
+                await update.message.reply_text(
+                    f"По ТТ {text} немає списків з незаповненими товарами."
+                )
                 return
 
             keyboard = []
@@ -388,9 +401,23 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         sheet_title = data.split(":", 1)[1]
         context.user_data["selected_sheet"] = sheet_title
 
+        tt_number = context.user_data.get("tt_number", "")
+
+        products = get_products_by_tt(sheet_title, tt_number)
+
+        if not products:
+            await query.edit_message_text(
+                f"По ТТ {tt_number} у списку {sheet_title} незаповнених товарів немає."
+            )
+            return
+
+        context.user_data["products"] = products
+        context.user_data["current_product_index"] = 0
+
         await query.edit_message_text(
-            f"Список обрано: {sheet_title}\nВведи номер ТТ у форматі 006, 054, 123:"
+            f"Список обрано: {sheet_title}\nДля ТТ {tt_number} знайдено товарів: {len(products)}"
         )
+        await show_current_product(query.message.chat.id, context)
         return
 
     if data == "noop":
