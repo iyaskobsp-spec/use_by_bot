@@ -264,7 +264,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         "Номер отримано.",
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup=stable_menu_keyboard()
     )
 
     await update.message.reply_text(
