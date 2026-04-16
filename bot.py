@@ -90,7 +90,14 @@ def get_products_by_tt(sheet_title, tt_number):
         tt = row[1].strip() if len(row) > 1 else ""
         stock = row[2].strip() if len(row) > 2 else ""
 
-        if tt == tt_number:
+        term1 = row[3].strip() if len(row) > 3 else ""
+        qty1 = row[4].strip() if len(row) > 4 else ""
+        term2 = row[5].strip() if len(row) > 5 else ""
+        qty2 = row[6].strip() if len(row) > 6 else ""
+
+        already_filled = any([term1, qty1, term2, qty2])
+
+        if tt == tt_number and not already_filled:
             products.append({
                 "row_number": i,
                 "product_name": product_name,
