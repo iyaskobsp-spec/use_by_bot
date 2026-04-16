@@ -336,7 +336,21 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"Для ТТ {text} знайдено товарів: {len(products)}"
             )
 
-            await show_current_product(update.effective_chat.id, context)
+            first_product = products[0]
+            context.user_data["awaiting"] = "term1_date"
+
+            keyboard = InlineKeyboardMarkup(
+                build_calendar().inline_keyboard + [
+                    [InlineKeyboardButton("Товар відсутній", callback_data="no_product")]
+                ]
+            )
+
+            await update.message.reply_text(
+                f"Товар: {first_product['product_name']}\n"
+                f"Залишок обліковий: {first_product['stock']}\n\n"
+                f"Найближчий термін закінчення придатності:",
+                reply_markup=keyboard
+            )
             return
 
         await update.message.reply_text(
