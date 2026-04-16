@@ -244,6 +244,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
+    await update.message.reply_text(
+        "Меню доступне внизу 👇",
+        reply_markup=stable_menu_keyboard()
+    )
+
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info(f"CONTACT UPDATE: {update}")
 
