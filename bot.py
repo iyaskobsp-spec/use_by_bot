@@ -340,7 +340,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data["awaiting"] = "term1_date"
 
             keyboard = InlineKeyboardMarkup(
-                build_calendar().inline_keyboard + [
+                list(build_calendar().inline_keyboard) + [
                     [InlineKeyboardButton("Товар відсутній", callback_data="no_product")]
                 ]
             )
