@@ -377,6 +377,29 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "noop":
         return
 
+    if data == "no_product":
+        current_index = context.user_data["current_product_index"]
+        current_product = context.user_data["products"][current_index]
+
+        save_product_result(
+            context.user_data["selected_sheet"],
+            current_product["row_number"],
+            "",
+            "-",
+            "",
+            ""
+        )
+
+        context.user_data["current_product_index"] += 1
+        context.user_data["term1_date"] = ""
+        context.user_data["term1_qty"] = ""
+        context.user_data["term2_date"] = ""
+        context.user_data["term2_qty"] = ""
+
+        await query.edit_message_text("Товар відсутній. Дані записано в таблицю.")
+        await show_current_product(query.message.chat.id, context)
+        return
+
     if data == "term2_yes":
         context.user_data["awaiting"] = "term2_date"
 
