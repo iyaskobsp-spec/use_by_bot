@@ -14,7 +14,34 @@ def get_mysql_connection():
         database=os.getenv("MYSQLDATABASE"),
     )
 
+def get_expiry_stats():
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
 
+    try:
+        cursor.execute(
+            """
+            SELECT list_name, COUNT(*)
+            FROM expiry_items
+            GROUP BY list_name
+            ORDER BY list_name
+            """
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "list_name": row[0],
+                "rows_count": row[1],
+            }
+            for row in rows
+        ]
+
+    finally:
+        cursor.close()
+        connection.close()
+        
 def parse_date(value):
     value = (value or "").strip()
 
