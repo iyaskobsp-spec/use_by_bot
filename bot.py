@@ -3,7 +3,7 @@ import os
 import json
 import re
 from dotenv import load_dotenv
-from mysql_import import import_expiry_csv
+from mysql_import import import_expiry_csv, get_expiry_stats
 from datetime import date
 logging.basicConfig(level=logging.INFO)
 
