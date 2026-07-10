@@ -186,3 +186,152 @@ def import_expiry_csv(file_path):
     finally:
         cursor.close()
         connection.close()
+
+def get_list_names_from_mysql():
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT DISTINCT list_name
+            FROM expiry_items
+            ORDER BY list_name
+            """
+        )
+
+        rows = cursor.fetchall()
+        return [row[0] for row in rows]
+
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def get_available_list_names_for_tt_mysql(tt_number):
+    tt_number = str(tt_number).strip().zfill(3)
+
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT DISTINCT list_name
+            FROM expiry_items
+            WHERE tt_number = %s
+              AND (
+                    status IS NULL
+                    OR status = ''
+                    OR status = 'pending'
+                  )
+            ORDER BY list_name
+            """,
+            (tt_number,)
+        )
+
+        rows = cursor.fetchall()
+        return [row[0] for row in rows]
+
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def get_products_by_tt_mysql(list_name, tt_number):
+    tt_number = str(tt_number).strip().zfill(3)
+
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                id,
+                product_name,
+                stock_qty
+            FROM expiry_items
+            WHERE list_name = %s
+              AND tt_number = %s
+              AND (
+                    status IS NULL
+                    OR status = ''
+                    OR status = 'pending'
+                  )
+            ORDER BY id
+            """,
+            (list_name, tt_number)
+        )
+
+        rows = cursor.fetchall()
+
+        products = []
+
+        for row in rows:
+            products.append({
+                "row_number": row["id"],
+                "product_name": row["product_name"],
+                "stock": row["stock_qty"],
+            })
+
+        return products
+
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def save_product_result_mysql(list_name, row_id, term1, qty1, term2="", qty2=""):
+    term1_value = parse_date(term1)
+    term2_value = parse_date(term2)
+
+    qty1_value = (qty1 or "").strip() or None
+    qty2_value = (qty2 or "").strip() or None
+
+    if not term1_value and qty1_value == "-" and not term2_value and not qty2_value:
+        status = "absent"
+    else:
+        status = "done"
+
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            UPDATE expiry_items
+            SET
+                term1 = %s,
+                qty1 = %s,
+                term2 = %s,
+                qty2 = %s,
+                status = %s
+            WHERE id = %s
+              AND list_name = %s
+            """,
+            (
+                term1_value,
+                qty1_value,
+                term2_value,
+                qty2_value,
+                status,
+                row_id,
+                list_name,
+            )
+        )
+
+        if cursor.rowcount == 0:
+            raise ValueError(
+                f"Не знайдено рядок для запису: list_name={list_name}, id={row_id}"
+            )
+
+        connection.commit()
+
+    except Exception:
+        connection.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        connection.close()
