@@ -75,55 +75,11 @@ def get_list_sheet_titles():
     return titles
 
 def get_products_by_tt(sheet_title, tt_number):
-    creds_dict = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
-
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-
-    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    client = gspread.authorize(credentials)
-
-    spreadsheet = client.open_by_key(SHEET_ID)
-    worksheet = spreadsheet.worksheet(sheet_title)
-
-    rows = worksheet.get_all_values()
-
-    products = []
-
-    for i, row in enumerate(rows[1:], start=2):  # пропускаємо заголовок
-        product_name = row[0].strip() if len(row) > 0 else ""
-        tt = row[1].strip() if len(row) > 1 else ""
-        stock = row[2].strip() if len(row) > 2 else ""
-
-        term1 = row[3].strip() if len(row) > 3 else ""
-        qty1 = row[4].strip() if len(row) > 4 else ""
-        term2 = row[5].strip() if len(row) > 5 else ""
-        qty2 = row[6].strip() if len(row) > 6 else ""
-
-        already_filled = any([term1, qty1, term2, qty2])
-
-        if tt == tt_number and not already_filled:
-            products.append({
-                "row_number": i,
-                "product_name": product_name,
-                "stock": stock,
-            })
-
-    return products
+    return get_products_by_tt_mysql(sheet_title, tt_number)
 
 def get_available_sheet_titles_for_tt(tt_number):
-    titles = get_list_sheet_titles()
-    available = []
-
-    for title in titles:
-        products = get_products_by_tt(title, tt_number)
-        if products:
-            available.append(title)
-
-    return available
-
+    return get_available_list_names_for_tt_mysql(tt_number)
+    
 def _month_days(year: int, month: int):
     import calendar
     first_weekday, days_count = calendar.monthrange(year, month)
@@ -183,22 +139,13 @@ def build_calendar(year: int = None, month: int = None):
     return InlineKeyboardMarkup(buttons)
 
 def save_product_result(sheet_title, row_number, term1, qty1, term2="", qty2=""):
-    creds_dict = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
-
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-
-    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    client = gspread.authorize(credentials)
-
-    spreadsheet = client.open_by_key(SHEET_ID)
-    worksheet = spreadsheet.worksheet(sheet_title)
-
-    worksheet.update(
-        range_name=f"D{row_number}:G{row_number}",
-        values=[[term1, qty1, term2, qty2]]
+    save_product_result_mysql(
+        sheet_title,
+        row_number,
+        term1,
+        qty1,
+        term2,
+        qty2
     )
 
 async def show_current_product(chat_id, context):
