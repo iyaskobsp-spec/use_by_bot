@@ -629,6 +629,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.Regex("^🏠 Меню$"), start))
     app.add_handler(CommandHandler("testsheet", test_sheet))
+    app.add_handler(CommandHandler("mysqlstats", mysql_stats))
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_csv_import))
