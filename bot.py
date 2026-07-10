@@ -535,7 +535,52 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"Другий термін придатності: {formatted_date}\n\nВведи кількість:"
             )
             return
-    
+
+async def handle_csv_import(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    document = update.message.document
+
+    if not document:
+        return
+
+    file_name = document.file_name or ""
+
+    if not file_name.lower().endswith(".csv"):
+        await update.message.reply_text(
+            "Потрібен файл у форматі CSV."
+        )
+        return
+
+    safe_file_name = os.path.basename(file_name)
+    temp_path = f"/tmp/{update.effective_user.id}_{safe_file_name}"
+
+    await update.message.reply_text(
+        "Файл отримано. Завантажую список у MySQL..."
+    )
+
+    try:
+        telegram_file = await document.get_file()
+        await telegram_file.download_to_drive(custom_path=temp_path)
+
+        result = import_expiry_csv(temp_path)
+
+        await update.message.reply_text(
+            f"✅ Список завантажено в MySQL.\n"
+            f"Назва списку: {result['list_name']}\n"
+            f"Завантажено рядків: {result['imported_rows']}"
+        )
+
+    except Exception as e:
+        logging.exception("Помилка імпорту CSV")
+
+        await update.message.reply_text(
+            f"❌ Не вдалося завантажити файл.\n\n"
+            f"Помилка: {e}"
+        )
+
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
 def main():
     if not BOT_TOKEN:
         raise ValueError("Не знайдено BOT_TOKEN")
