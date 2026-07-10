@@ -596,6 +596,7 @@ def main():
     app.add_handler(CommandHandler("testsheet", test_sheet))
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+    app.add_handler(MessageHandler(filters.Document.ALL, handle_csv_import))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
     print("Бот запущений...")
