@@ -285,6 +285,41 @@ async def test_sheet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"Помилка:\n{e}")
 
+async def mysql_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        stats = get_expiry_stats()
+
+        if not stats:
+            await update.message.reply_text(
+                "У MySQL поки немає завантажених списків."
+            )
+            return
+
+        lines = ["📊 Списки в MySQL:"]
+
+        total_rows = 0
+
+        for item in stats:
+            list_name = item["list_name"]
+            rows_count = item["rows_count"]
+            total_rows += rows_count
+
+            lines.append(
+                f"• {list_name}: {rows_count} рядків"
+            )
+
+        lines.append(f"\nУсього рядків: {total_rows}")
+
+        await update.message.reply_text("\n".join(lines))
+
+    except Exception as e:
+        logging.exception("Помилка читання статистики MySQL")
+
+        await update.message.reply_text(
+            f"❌ Не вдалося прочитати MySQL.\n\n"
+            f"Помилка: {e}"
+        )
+        
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
