@@ -304,6 +304,171 @@ async def store_managers_stats(update: Update, context: ContextTypes.DEFAULT_TYP
             f"❌ Не вдалося прочитати довідник магазинів.\n\n"
             f"Помилка: {e}"
         )
+
+REPORT_HEADERS = [
+    "Дата звіту",
+    "Дата/час перевірки",
+    "Список",
+    "ТМ",
+    "ТТ",
+    "Магазин",
+    "Товар",
+    "Залишок обліковий",
+    "Термін 1",
+    "К-сть 1",
+    "Термін 2",
+    "К-сть 2",
+    "Статус",
+    "Джерело",
+]
+
+
+def get_spreadsheet():
+    creds_dict = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(credentials)
+
+    return client.open_by_key(SHEET_ID)
+
+
+def safe_sheet_title(title):
+    title = (title or "Без ТМ").strip()
+    title = re.sub(r"[\\/\?\*\[\]:]", "_", title)
+
+    if not title:
+        title = "Без ТМ"
+
+    return title[:90]
+
+
+def get_or_create_report_worksheet(spreadsheet, title):
+    try:
+        worksheet = spreadsheet.worksheet(title)
+    except gspread.WorksheetNotFound:
+        worksheet = spreadsheet.add_worksheet(
+            title=title,
+            rows=1000,
+            cols=len(REPORT_HEADERS)
+        )
+
+    current_headers = worksheet.row_values(1)
+
+    if current_headers != REPORT_HEADERS:
+        worksheet.update("A1:N1", [REPORT_HEADERS])
+
+    return worksheet
+
+
+def format_report_date(value):
+    if not value:
+        return ""
+
+    if hasattr(value, "strftime"):
+        return value.strftime("%d.%m.%Y")
+
+    return str(value)
+
+
+def format_report_datetime(value):
+    if not value:
+        return ""
+
+    if hasattr(value, "strftime"):
+        return value.strftime("%d.%m.%Y %H:%M:%S")
+
+    return str(value)
+
+
+def format_report_status(value):
+    if value == "done":
+        return "заповнено"
+
+    if value == "absent":
+        return "товар відсутній"
+
+    if value == "pending":
+        return "очікує перевірки"
+
+    return value or ""
+
+
+def build_report_rows(report_date, items):
+    rows = []
+
+    for item in items:
+        rows.append([
+            format_report_date(report_date),
+            format_report_datetime(item["checked_at"]),
+            item["list_name"],
+            item["tm_name"],
+            item["tt_number"],
+            item["store_name"],
+            item["product_name"],
+            item["stock_qty"],
+            format_report_date(item["term1"]),
+            item["qty1"] or "",
+            format_report_date(item["term2"]),
+            item["qty2"] or "",
+            format_report_status(item["status"]),
+            item["source"],
+        ])
+
+    return rows
+
+
+def write_report_to_google_sheets(report_date):
+    items = get_checked_items_for_report(report_date)
+
+    if not items:
+        return {
+            "rows_count": 0,
+            "tm_count": 0,
+        }
+
+    spreadsheet = get_spreadsheet()
+    rows = build_report_rows(report_date, items)
+
+    all_reports_ws = get_or_create_report_worksheet(
+        spreadsheet,
+        "all_reports"
+    )
+
+    all_reports_ws.append_rows(
+        rows,
+        value_input_option="USER_ENTERED"
+    )
+
+    rows_by_tm = {}
+
+    for item, row in zip(items, rows):
+        tm_title = safe_sheet_title(item["tm_name"])
+
+        if tm_title not in rows_by_tm:
+            rows_by_tm[tm_title] = []
+
+        rows_by_tm[tm_title].append(row)
+
+    for tm_title, tm_rows in rows_by_tm.items():
+        tm_ws = get_or_create_report_worksheet(
+            spreadsheet,
+            tm_title
+        )
+
+        tm_ws.append_rows(
+            tm_rows,
+            value_input_option="USER_ENTERED"
+        )
+
+    return {
+        "rows_count": len(rows),
+        "tm_count": len(rows_by_tm),
+    }
         
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
