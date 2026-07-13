@@ -225,6 +225,10 @@ def get_available_list_names_for_tt_mysql(tt_number):
                     OR status = ''
                     OR status = 'pending'
                   )
+              AND (
+                    check_date IS NULL
+                    OR check_date <= CURDATE()
+                  )
             ORDER BY list_name
             """,
             (tt_number,)
