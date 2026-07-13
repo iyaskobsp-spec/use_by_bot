@@ -306,7 +306,8 @@ def save_product_result_mysql(list_name, row_id, term1, qty1, term2="", qty2="")
                 qty1 = %s,
                 term2 = %s,
                 qty2 = %s,
-                status = %s
+                status = %s,
+                checked_at = NOW()
             WHERE id = %s
               AND list_name = %s
             """,
