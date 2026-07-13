@@ -282,6 +282,25 @@ async def mysql_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"❌ Не вдалося прочитати MySQL.\n\n"
             f"Помилка: {e}"
         )
+
+async def store_managers_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        stats = get_store_managers_stats()
+
+        await update.message.reply_text(
+            f"🏪 Довідник магазинів у MySQL:\n"
+            f"Усього ТТ: {stats['total_count']}\n"
+            f"Активні: {stats['active_count']}\n"
+            f"Неактивні: {stats['inactive_count']}"
+        )
+
+    except Exception as e:
+        logging.exception("Помилка читання довідника магазинів MySQL")
+
+        await update.message.reply_text(
+            f"❌ Не вдалося прочитати довідник магазинів.\n\n"
+            f"Помилка: {e}"
+        )
         
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
