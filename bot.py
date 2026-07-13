@@ -12,8 +12,9 @@ from mysql_import import (
     get_products_by_tt_mysql,
     save_product_result_mysql,
     ensure_expiry_items_extra_columns,
+    get_checked_items_for_report,
 )
-from datetime import date
+from datetime import date, timedelta
 logging.basicConfig(
     level=logging.WARNING,
     format="%(asctime)s %(levelname)s:%(name)s:%(message)s"
