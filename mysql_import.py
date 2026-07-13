@@ -443,3 +443,30 @@ def import_store_managers_csv(file_path):
     finally:
         cursor.close()
         connection.close()
+
+def get_store_managers_stats():
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                COUNT(*) AS total_count,
+                SUM(CASE WHEN active = 'active' THEN 1 ELSE 0 END) AS active_count,
+                SUM(CASE WHEN active = 'inactive' THEN 1 ELSE 0 END) AS inactive_count
+            FROM store_managers
+            """
+        )
+
+        row = cursor.fetchone()
+
+        return {
+            "total_count": row["total_count"] or 0,
+            "active_count": row["active_count"] or 0,
+            "inactive_count": row["inactive_count"] or 0,
+        }
+
+    finally:
+        cursor.close()
+        connection.close()
