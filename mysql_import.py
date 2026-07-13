@@ -154,6 +154,8 @@ def import_expiry_csv(file_path):
                 f"Знайдено рядків: {existing_count}"
             )
 
+        check_date = parse_check_date_from_list_name(list_name)
+
         cursor.executemany(
             """
             INSERT INTO expiry_items (
@@ -165,11 +167,16 @@ def import_expiry_csv(file_path):
                 qty1,
                 term2,
                 qty2,
-                status
+                status,
+                check_date,
+                source
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'manual')
             """,
-            records,
+            [
+                record + (check_date,)
+                for record in records
+            ],
         )
 
         connection.commit()
