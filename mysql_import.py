@@ -470,3 +470,85 @@ def get_store_managers_stats():
     finally:
         cursor.close()
         connection.close()
+
+def column_exists(cursor, table_name, column_name):
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = %s
+          AND COLUMN_NAME = %s
+        """,
+        (table_name, column_name)
+    )
+
+    return cursor.fetchone()[0] > 0
+
+
+def parse_check_date_from_list_name(list_name):
+    value = (list_name or "").strip()
+
+    if "_" in value:
+        value = value.split("_", 1)[0]
+
+    try:
+        return datetime.strptime(value, "%d.%m.%Y").date()
+    except ValueError:
+        return None
+
+
+def ensure_expiry_items_extra_columns():
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    try:
+        columns_to_add = [
+            (
+                "checked_at",
+                "ALTER TABLE expiry_items ADD COLUMN checked_at DATETIME NULL"
+            ),
+            (
+                "check_date",
+                "ALTER TABLE expiry_items ADD COLUMN check_date DATE NULL"
+            ),
+            (
+                "source",
+                "ALTER TABLE expiry_items ADD COLUMN source VARCHAR(20) DEFAULT 'manual'"
+            ),
+            (
+                "created_at",
+                "ALTER TABLE expiry_items ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+            ),
+        ]
+
+        for column_name, alter_sql in columns_to_add:
+            if not column_exists(cursor, "expiry_items", column_name):
+                cursor.execute(alter_sql)
+
+        cursor.execute(
+            """
+            UPDATE expiry_items
+            SET check_date = STR_TO_DATE(SUBSTRING_INDEX(list_name, '_', 1), '%d.%m.%Y')
+            WHERE check_date IS NULL
+              AND list_name REGEXP '^[0-9]{2}\\.[0-9]{2}\\.[0-9]{4}_'
+            """
+        )
+
+        cursor.execute(
+            """
+            UPDATE expiry_items
+            SET source = 'manual'
+            WHERE source IS NULL OR source = ''
+            """
+        )
+
+        connection.commit()
+
+    except Exception:
+        connection.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        connection.close()
