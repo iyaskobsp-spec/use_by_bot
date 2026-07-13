@@ -12,7 +12,15 @@ from mysql_import import (
     save_product_result_mysql,
 )
 from datetime import date
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s"
+)
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("telegram").setLevel(logging.WARNING)
+logging.getLogger("telegram.ext").setLevel(logging.WARNING)
 
 import gspread
 from google.oauth2.service_account import Credentials
