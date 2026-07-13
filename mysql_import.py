@@ -335,3 +335,111 @@ def save_product_result_mysql(list_name, row_id, term1, qty1, term2="", qty2="")
     finally:
         cursor.close()
         connection.close()
+
+def import_store_managers_csv(file_path):
+    required_columns = {
+        "tt_number",
+        "store_name",
+        "tm_name",
+        "active",
+    }
+
+    records = []
+
+    with open(file_path, "r", encoding="utf-8-sig", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+
+        actual_columns = set(reader.fieldnames or [])
+        missing_columns = required_columns - actual_columns
+
+        if missing_columns:
+            raise ValueError(
+                "У файлі довідника немає колонок: "
+                + ", ".join(sorted(missing_columns))
+            )
+
+        for row_number, row in enumerate(reader, start=2):
+            tt_number = (row.get("tt_number") or "").strip()
+            store_name = (row.get("store_name") or "").strip()
+            tm_name = (row.get("tm_name") or "").strip()
+            active = (row.get("active") or "").strip().lower() or "active"
+
+            if not tt_number:
+                raise ValueError(
+                    f"Рядок {row_number}: не вказано tt_number"
+                )
+
+            if not store_name:
+                raise ValueError(
+                    f"Рядок {row_number}: не вказано store_name"
+                )
+
+            if not tm_name:
+                raise ValueError(
+                    f"Рядок {row_number}: не вказано tm_name"
+                )
+
+            if active not in ("active", "inactive"):
+                raise ValueError(
+                    f"Рядок {row_number}: active має бути active або inactive"
+                )
+
+            tt_number = tt_number.zfill(3)
+
+            records.append(
+                (
+                    tt_number,
+                    store_name,
+                    tm_name,
+                    active,
+                )
+            )
+
+    if not records:
+        raise ValueError("У CSV довідника немає рядків для завантаження")
+
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS store_managers (
+                tt_number VARCHAR(10) NOT NULL PRIMARY KEY,
+                store_name VARCHAR(255) NOT NULL,
+                tm_name VARCHAR(255) NOT NULL,
+                active VARCHAR(20) DEFAULT 'active'
+            )
+            """
+        )
+
+        cursor.executemany(
+            """
+            INSERT INTO store_managers (
+                tt_number,
+                store_name,
+                tm_name,
+                active
+            )
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                store_name = VALUES(store_name),
+                tm_name = VALUES(tm_name),
+                active = VALUES(active)
+            """,
+            records,
+        )
+
+        connection.commit()
+
+        return {
+            "imported_rows": len(records),
+        }
+
+    except Exception:
+        connection.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        connection.close()
