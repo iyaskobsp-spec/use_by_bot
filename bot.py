@@ -550,20 +550,68 @@ async def handle_csv_import(update: Update, context: ContextTypes.DEFAULT_TYPE):
     safe_file_name = os.path.basename(file_name)
     temp_path = f"/tmp/{update.effective_user.id}_{safe_file_name}"
 
-    await update.message.reply_text(
-        "Файл отримано. Завантажую список у MySQL..."
-    )
-
     try:
         telegram_file = await document.get_file()
         await telegram_file.download_to_drive(custom_path=temp_path)
 
-        result = import_expiry_csv(temp_path)
+        import csv
 
-        await update.message.reply_text(
-            f"✅ Список завантажено в MySQL.\n"
-            f"Назва списку: {result['list_name']}\n"
-            f"Завантажено рядків: {result['imported_rows']}"
+        with open(temp_path, "r", encoding="utf-8-sig", newline="") as csv_file:
+            reader = csv.DictReader(csv_file)
+            columns = set(reader.fieldnames or [])
+
+        expiry_columns = {
+            "list_name",
+            "tt_number",
+            "product_name",
+            "stock_qty",
+            "term1",
+            "qty1",
+            "term2",
+            "qty2",
+            "status",
+        }
+
+        store_manager_columns = {
+            "tt_number",
+            "store_name",
+            "tm_name",
+            "active",
+        }
+
+        if store_manager_columns.issubset(columns):
+            await update.message.reply_text(
+                "Файл отримано. Завантажую довідник магазинів у MySQL..."
+            )
+
+            result = import_store_managers_csv(temp_path)
+
+            await update.message.reply_text(
+                f"✅ Довідник магазинів завантажено в MySQL.\n"
+                f"Завантажено/оновлено рядків: {result['imported_rows']}"
+            )
+            return
+
+        if expiry_columns.issubset(columns):
+            await update.message.reply_text(
+                "Файл отримано. Завантажую список товарів у MySQL..."
+            )
+
+            result = import_expiry_csv(temp_path)
+
+            await update.message.reply_text(
+                f"✅ Список завантажено в MySQL.\n"
+                f"Назва списку: {result['list_name']}\n"
+                f"Завантажено рядків: {result['imported_rows']}"
+            )
+            return
+
+        raise ValueError(
+            "Невідомий формат CSV.\n\n"
+            "Для списку товарів потрібні колонки:\n"
+            "list_name, tt_number, product_name, stock_qty, term1, qty1, term2, qty2, status\n\n"
+            "Для довідника магазинів потрібні колонки:\n"
+            "tt_number, store_name, tm_name, active"
         )
 
     except Exception as e:
