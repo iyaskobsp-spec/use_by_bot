@@ -11,6 +11,7 @@ from mysql_import import (
     get_available_list_names_for_tt_mysql,
     get_products_by_tt_mysql,
     save_product_result_mysql,
+    ensure_expiry_items_extra_columns,
 )
 from datetime import date
 logging.basicConfig(
@@ -668,6 +669,8 @@ def main():
         raise ValueError("Не знайдено GOOGLE_SERVICE_ACCOUNT_JSON")
     if not SHEET_ID:
         raise ValueError("Не знайдено SHEET_ID")
+
+    ensure_expiry_items_extra_columns()
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
