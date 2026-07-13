@@ -469,6 +469,59 @@ def write_report_to_google_sheets(report_date):
         "rows_count": len(rows),
         "tm_count": len(rows_by_tm),
     }
+
+async def report_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        report_date = date.today()
+        result = write_report_to_google_sheets(report_date)
+
+        if result["rows_count"] == 0:
+            await update.message.reply_text(
+                f"За сьогодні ({format_report_date(report_date)}) немає перевірених товарів для звіту."
+            )
+            return
+
+        await update.message.reply_text(
+            f"✅ Звіт за сьогодні сформовано в Google Sheets.\n"
+            f"Дата: {format_report_date(report_date)}\n"
+            f"Додано рядків: {result['rows_count']}\n"
+            f"Вкладок ТМ: {result['tm_count']}"
+        )
+
+    except Exception as e:
+        logging.exception("Помилка формування звіту за сьогодні")
+
+        await update.message.reply_text(
+            f"❌ Не вдалося сформувати звіт за сьогодні.\n\n"
+            f"Помилка: {e}"
+        )
+
+
+async def report_yesterday(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        report_date = date.today() - timedelta(days=1)
+        result = write_report_to_google_sheets(report_date)
+
+        if result["rows_count"] == 0:
+            await update.message.reply_text(
+                f"За вчора ({format_report_date(report_date)}) немає перевірених товарів для звіту."
+            )
+            return
+
+        await update.message.reply_text(
+            f"✅ Звіт за вчора сформовано в Google Sheets.\n"
+            f"Дата: {format_report_date(report_date)}\n"
+            f"Додано рядків: {result['rows_count']}\n"
+            f"Вкладок ТМ: {result['tm_count']}"
+        )
+
+    except Exception as e:
+        logging.exception("Помилка формування звіту за вчора")
+
+        await update.message.reply_text(
+            f"❌ Не вдалося сформувати звіт за вчора.\n\n"
+            f"Помилка: {e}"
+        )
         
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
@@ -847,6 +900,8 @@ def main():
     app.add_handler(CommandHandler("testsheet", test_sheet))
     app.add_handler(CommandHandler("mysqlstats", mysql_stats))
     app.add_handler(CommandHandler("storestats", store_managers_stats))
+    app.add_handler(CommandHandler("reporttoday", report_today))
+    app.add_handler(CommandHandler("reportyesterday", report_yesterday))
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_csv_import))
