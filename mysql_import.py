@@ -564,3 +564,65 @@ def ensure_expiry_items_extra_columns():
     finally:
         cursor.close()
         connection.close()
+
+def get_checked_items_for_report(report_date):
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                e.checked_at,
+                e.list_name,
+                COALESCE(sm.tm_name, 'Без ТМ') AS tm_name,
+                e.tt_number,
+                COALESCE(sm.store_name, '') AS store_name,
+                e.product_name,
+                e.stock_qty,
+                e.term1,
+                e.qty1,
+                e.term2,
+                e.qty2,
+                COALESCE(e.status, 'pending') AS status,
+                COALESCE(e.source, 'manual') AS source
+            FROM expiry_items e
+            LEFT JOIN store_managers sm
+                ON sm.tt_number = e.tt_number
+            WHERE DATE(e.checked_at) = %s
+              AND e.status IN ('done', 'absent')
+            ORDER BY
+                tm_name,
+                e.tt_number,
+                e.product_name,
+                e.checked_at
+            """,
+            (report_date,)
+        )
+
+        rows = cursor.fetchall()
+
+        result = []
+
+        for row in rows:
+            result.append({
+                "checked_at": row["checked_at"],
+                "list_name": row["list_name"],
+                "tm_name": row["tm_name"],
+                "tt_number": row["tt_number"],
+                "store_name": row["store_name"],
+                "product_name": row["product_name"],
+                "stock_qty": row["stock_qty"],
+                "term1": row["term1"],
+                "qty1": row["qty1"],
+                "term2": row["term2"],
+                "qty2": row["qty2"],
+                "status": row["status"],
+                "source": row["source"],
+            })
+
+        return result
+
+    finally:
+        cursor.close()
+        connection.close()
