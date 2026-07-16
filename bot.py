@@ -13,6 +13,7 @@ from mysql_import import (
     save_product_result_mysql,
     ensure_expiry_items_extra_columns,
     get_checked_items_for_report,
+    mark_report_items_exported,
 )
 from datetime import date, timedelta
 logging.basicConfig(
@@ -464,6 +465,9 @@ def write_report_to_google_sheets(report_date):
             tm_rows,
             value_input_option="USER_ENTERED"
         )
+
+    item_ids = [item["id"] for item in items]
+    mark_report_items_exported(item_ids)
 
     return {
         "rows_count": len(rows),
