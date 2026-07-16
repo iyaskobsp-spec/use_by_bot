@@ -532,6 +532,10 @@ def ensure_expiry_items_extra_columns():
                 "created_at",
                 "ALTER TABLE expiry_items ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
             ),
+            (
+                "report_exported_at",
+                "ALTER TABLE expiry_items ADD COLUMN report_exported_at DATETIME NULL"
+            ),
         ]
 
         for column_name, alter_sql in columns_to_add:
@@ -573,6 +577,7 @@ def get_checked_items_for_report(report_date):
         cursor.execute(
             """
             SELECT
+                e.id,
                 e.checked_at,
                 e.list_name,
                 COALESCE(sm.tm_name, 'Без ТМ') AS tm_name,
@@ -591,6 +596,7 @@ def get_checked_items_for_report(report_date):
                 ON sm.tt_number = e.tt_number
             WHERE DATE(e.checked_at) = %s
               AND e.status IN ('done', 'absent')
+              AND e.report_exported_at IS NULL
             ORDER BY
                 tm_name,
                 e.tt_number,
@@ -606,6 +612,7 @@ def get_checked_items_for_report(report_date):
 
         for row in rows:
             result.append({
+                "id": row["id"],
                 "checked_at": row["checked_at"],
                 "list_name": row["list_name"],
                 "tm_name": row["tm_name"],
@@ -622,6 +629,35 @@ def get_checked_items_for_report(report_date):
             })
 
         return result
+
+    finally:
+        cursor.close()
+        connection.close()
+
+def mark_report_items_exported(item_ids):
+    if not item_ids:
+        return
+
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    try:
+        placeholders = ", ".join(["%s"] * len(item_ids))
+
+        cursor.execute(
+            f"""
+            UPDATE expiry_items
+            SET report_exported_at = NOW()
+            WHERE id IN ({placeholders})
+            """,
+            tuple(item_ids)
+        )
+
+        connection.commit()
+
+    except Exception:
+        connection.rollback()
+        raise
 
     finally:
         cursor.close()
