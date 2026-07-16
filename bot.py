@@ -526,6 +526,34 @@ async def report_yesterday(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"❌ Не вдалося сформувати звіт за вчора.\n\n"
             f"Помилка: {e}"
         )
+
+async def mark_today_exported(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        report_date = date.today()
+        items = get_checked_items_for_report(report_date)
+
+        if not items:
+            await update.message.reply_text(
+                f"За сьогодні ({format_report_date(report_date)}) немає непомічених рядків для звіту."
+            )
+            return
+
+        item_ids = [item["id"] for item in items]
+        mark_report_items_exported(item_ids)
+
+        await update.message.reply_text(
+            f"✅ Сьогоднішні рядки помічено як уже вивантажені.\n"
+            f"Дата: {format_report_date(report_date)}\n"
+            f"Помічено рядків: {len(item_ids)}"
+        )
+
+    except Exception as e:
+        logging.exception("Помилка позначення сьогоднішніх рядків як вивантажених")
+
+        await update.message.reply_text(
+            f"❌ Не вдалося помітити сьогоднішні рядки.\n\n"
+            f"Помилка: {e}"
+        )
         
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
@@ -906,6 +934,7 @@ def main():
     app.add_handler(CommandHandler("storestats", store_managers_stats))
     app.add_handler(CommandHandler("reporttoday", report_today))
     app.add_handler(CommandHandler("reportyesterday", report_yesterday))
+    app.add_handler(CommandHandler("marktodayexported", mark_today_exported))
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_csv_import))
